@@ -48,23 +48,25 @@ def generate_ground(n):
     for i in range(n):
         sprite = pygame.sprite.Sprite()
         sprite.image = load_image(f"ground/ground_{i}.jpg")
-        sprite.rect = pygame.Rect(0, 0, GROUND_LEN, 50)
-        sprite.rect.x = (i - 1 / 2) * GROUND_LEN
-        sprite.rect.y = 450
+        sprite.rect = pygame.Rect(0, 0, GROUND_LEN, GROUND_HEIGHT)
+        sprite.rect.x = i * GROUND_LEN
+        sprite.rect.y = HEIGHT - GROUND_HEIGHT
         ground.add(sprite)
 
 
 def move_ground(ground, speed):
-    if ground.rect.x == -1 * GROUND_LEN:
-        ground.rect.x = (GROUNDS - 1) * GROUND_LEN
+    if ground.rect.x <= -1 * GROUND_LEN:
+        n = ground.rect.x + GROUND_LEN
+        ground.rect.x = (GROUNDS - 1) * GROUND_LEN + n
     ground.rect.x -= speed
 
 
 HEIGHT, WIDTH = 500, 1000
 FPS = 60
 GROUNDS = 3
-GROUND_LEN = 500
-SPEED = 25
+GROUND_LEN = 975
+GROUND_HEIGHT = 87
+SPEED = 34
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
