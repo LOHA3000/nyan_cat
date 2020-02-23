@@ -38,19 +38,20 @@ def game():
     nyan_animation_counter = 0
 
     while playing:
-        global SPEED, JUMP, SECOND_JUMP, FALL_SPEED, NYAN, NYAN_HEIGHT, HEIGHT, GROUND_HEIGHT
+        global SPEED, JUMP, SECOND_JUMP, NYAN, NYAN_HEIGHT, HEIGHT, GROUND_HEIGHT
+        global LIFTING, FALL, FALL_SPEED, LIFTING_SPEED, LIFTING_COUNTER
 
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     if not JUMP:
-                        NYAN.rect.y -= 200
+                        LIFTING = True
                         JUMP = True
-                        print('1st jump')
                     elif JUMP and not SECOND_JUMP:
-                        NYAN.rect.y -= 80
+                        LIFTING = True
+                        FALL = False
                         SECOND_JUMP = True
-                        print('2nd jump')
+                        LIFTING_COUNTER = 0
                 elif event.key == pygame.K_LEFT:
                     SPEED -= 10
                 elif event.key == pygame.K_RIGHT:
@@ -65,7 +66,10 @@ def game():
         animate_nyan(nyan_animation_counter)
         for i in range(GROUNDS):
             move_ground(list(ground)[i], SPEED)
-        move_nyan(FALL_SPEED)
+        if FALL:
+            move_nyan(FALL_SPEED)
+        elif LIFTING:
+            move_nyan(LIFTING_SPEED)
         ground.draw(screen)
         cactuses.draw(screen)
         nyan_group.draw(screen)
@@ -104,14 +108,28 @@ def generate_nyan():
 
 def move_nyan(i):
     global JUMP, SECOND_JUMP, NYAN, NYAN_HEIGHT, HEIGHT, GROUND_HEIGHT
-
-    if NYAN.rect.y + NYAN_HEIGHT < HEIGHT - GROUND_HEIGHT:
-        NYAN.rect.y += i
-    if NYAN.rect.y + NYAN_HEIGHT > HEIGHT - GROUND_HEIGHT:
-        NYAN.rect.y = HEIGHT - GROUND_HEIGHT - NYAN_HEIGHT
-    else:
-        JUMP = False
-        SECOND_JUMP = False
+    global LIFTING, FALL, LIFTING_COUNTER, FIRST_LIFTING, SECOND_LIFTING
+    if i > 0:
+        if NYAN.rect.y + NYAN_HEIGHT < HEIGHT - GROUND_HEIGHT:
+            NYAN.rect.y += i
+        if NYAN.rect.y + NYAN_HEIGHT > HEIGHT - GROUND_HEIGHT:
+            NYAN.rect.y = HEIGHT - GROUND_HEIGHT - NYAN_HEIGHT
+        elif NYAN.rect.y + NYAN_HEIGHT == HEIGHT - GROUND_HEIGHT:
+            JUMP = False
+            SECOND_JUMP = False
+            LIFTING = False
+            FALL = False
+    if i < 0:
+        if (JUMP and not SECOND_JUMP) and LIFTING_COUNTER < FIRST_LIFTING:
+            NYAN.rect.y += i
+            LIFTING_COUNTER -= i
+        elif SECOND_JUMP and LIFTING_COUNTER < SECOND_LIFTING:
+            NYAN.rect.y += i
+            LIFTING_COUNTER -= i
+        else:
+            LIFTING = False
+            FALL = True
+            LIFTING_COUNTER = 0
 
 
 def animate_nyan(nyan_count):
@@ -128,7 +146,7 @@ def generate_cactuses(n):
         width = int(rect[-2] * 1.5)
         sprite.rect = pygame.Rect(0, 0, width, height)
         sprite.image = load_image(f'cactuses/cactus_{i}.png', transform=[width, height])
-        sprite.rect.x = -200
+        sprite.rect.x = -200  # пока невидимые
         sprite.rect.y = HEIGHT - GROUND_HEIGHT - height
         cactuses.add(sprite)
 
@@ -148,8 +166,13 @@ NYAN_HEIGHT = 105
 NYAN_WIDTH = 165
 NYAN = ''
 
-FALL_SPEED = 13
-LIFTING_SPEED = 13
+FALL_SPEED = 20
+LIFTING_SPEED = -20
+FALL = False
+LIFTING = False
+LIFTING_COUNTER = 0
+FIRST_LIFTING = 200
+SECOND_LIFTING = 100
 
 JUMP = False
 SECOND_JUMP = False
