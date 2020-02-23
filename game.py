@@ -120,10 +120,13 @@ def animate_nyan(nyan_count):
 def generate_cactuses(n):
     for i in range(n):
         sprite = pygame.sprite.Sprite()
-        sprite.image = load_image(f'cactuses/cactus_{i}.png', color_key=(255, 255, 255))
-        sprite.rect = sprite.image.get_rect()
-        height = list(sprite.rect)[-1]
-        sprite.rect.x = 200 + 100 * i
+        sprite.image = load_image(f'cactuses/cactus_{i}.png')
+        rect = sprite.image.get_rect()
+        height = int(rect[-1] * 1.5)
+        width = int(rect[-2] * 1.5)
+        sprite.rect = pygame.Rect(0, 0, width, height)
+        sprite.image = load_image(f'cactuses/cactus_{i}.png', transform=[width, height])
+        sprite.rect.x = -200
         sprite.rect.y = HEIGHT - GROUND_HEIGHT - height
         cactuses.add(sprite)
 
