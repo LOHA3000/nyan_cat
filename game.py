@@ -3,12 +3,12 @@ import sys
 import os
 
 
-def load_image(name, color_key=None, transform=[]):
+def load_image(name, color_key=None, transform=None):
     fullname = os.path.join('data', name)
     image = pygame.image.load(fullname)
     if color_key is None:
         image.set_colorkey(color_key)
-    if transform != []:
+    if not (transform is None):
         image = pygame.transform.scale(image, tuple(transform))
     return image
 
@@ -38,7 +38,7 @@ def game():
     nyan_animation_counter = 0
 
     while playing:
-        global SPEED, JUMP, SECOND_JUMP, FALL_SPEED
+        global SPEED, JUMP, SECOND_JUMP, FALL_SPEED, NYAN, NYAN_HEIGHT, HEIGHT, GROUND_HEIGHT
 
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
@@ -46,9 +46,11 @@ def game():
                     if not JUMP:
                         NYAN.rect.y -= 200
                         JUMP = True
+                        print('1st jump')
                     elif JUMP and not SECOND_JUMP:
                         NYAN.rect.y -= 80
                         SECOND_JUMP = True
+                        print('2nd jump')
                 elif event.key == pygame.K_LEFT:
                     SPEED -= 10
                 elif event.key == pygame.K_RIGHT:
@@ -81,11 +83,11 @@ def generate_ground(n):
         ground.add(sprite)
 
 
-def move_ground(ground, speed):
-    if ground.rect.x <= -1 * GROUND_LEN:
-        n = ground.rect.x + GROUND_LEN
-        ground.rect.x = (GROUNDS - 1) * GROUND_LEN + n
-    ground.rect.x -= speed
+def move_ground(ground_part, speed):
+    if ground_part.rect.x <= -1 * GROUND_LEN:
+        n = ground_part.rect.x + GROUND_LEN
+        ground_part.rect.x = (GROUNDS - 1) * GROUND_LEN + n
+    ground_part.rect.x -= speed
 
 
 def generate_nyan():
@@ -101,11 +103,11 @@ def generate_nyan():
 
 
 def move_nyan(i):
-    global JUMP, SECOND_JUMP, NYAN
+    global JUMP, SECOND_JUMP, NYAN, NYAN_HEIGHT, HEIGHT, GROUND_HEIGHT
 
     if NYAN.rect.y + NYAN_HEIGHT < HEIGHT - GROUND_HEIGHT:
         NYAN.rect.y += i
-    elif NYAN.rect.y + NYAN_HEIGHT > HEIGHT - GROUND_HEIGHT:
+    if NYAN.rect.y + NYAN_HEIGHT > HEIGHT - GROUND_HEIGHT:
         NYAN.rect.y = HEIGHT - GROUND_HEIGHT - NYAN_HEIGHT
     else:
         JUMP = False
