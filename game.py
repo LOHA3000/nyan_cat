@@ -1,6 +1,7 @@
 import pygame
 import sys
 import os
+from random import choice
 
 
 def load_image(name, color_key=None, transform=None):
@@ -40,12 +41,14 @@ def game():
     while playing:
         global SPEED, JUMP, SECOND_JUMP, NYAN, NYAN_HEIGHT, HEIGHT, GROUND_HEIGHT
         global LIFTING, FALL, FALL_SPEED, LIFTING_SPEED, LIFTING_COUNTER
+        global STATES, CACTUS, ID
 
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     if not JUMP:
                         LIFTING = True
+                        FALL = False
                         JUMP = True
                     elif JUMP and not SECOND_JUMP:
                         LIFTING = True
@@ -70,6 +73,10 @@ def game():
             move_nyan(FALL_SPEED)
         elif LIFTING:
             move_nyan(LIFTING_SPEED)
+        if not False in STATES:
+            CACTUS, ID = change_cactus()
+        else:
+            move_cactus(CACTUS, ID, SPEED)
         ground.draw(screen)
         cactuses.draw(screen)
         nyan_group.draw(screen)
@@ -96,7 +103,6 @@ def move_ground(ground_part, speed):
 
 def generate_nyan():
     global NYAN
-
     sprite = pygame.sprite.Sprite()
     sprite.image = load_image(f'nyan/nyan_0.png', transform=[NYAN_WIDTH, NYAN_HEIGHT])
     sprite.rect = pygame.Rect(0, 0, NYAN_WIDTH, NYAN_HEIGHT)
@@ -138,17 +144,46 @@ def animate_nyan(nyan_count):
 
 
 def generate_cactuses(n):
+    global WIDTHES, STATES
     for i in range(n):
         sprite = pygame.sprite.Sprite()
         sprite.image = load_image(f'cactuses/cactus_{i}.png')
         rect = sprite.image.get_rect()
         height = int(rect[-1] * 1.5)
         width = int(rect[-2] * 1.5)
+        WIDTHES[i] = width
+        STATES.append(True)
         sprite.rect = pygame.Rect(0, 0, width, height)
         sprite.image = load_image(f'cactuses/cactus_{i}.png', transform=[width, height])
-        sprite.rect.x = -200  # пока невидимые
+        sprite.rect.x = 1000  # пока невидимые
         sprite.rect.y = HEIGHT - GROUND_HEIGHT - height
         cactuses.add(sprite)
+
+
+def move_cactus(cactus, id, speed):
+    global WIDTHES, cactuses, STATES, CACTUS, ID
+    if cactus.rect.x > -1 * WIDTHES[id]:
+        cactus.rect.x -= speed
+    else:
+        STATES[id] = True
+        cactus.rect.x = 1000
+        CACTUS, ID = change_cactus()
+
+
+
+def change_cactus():
+    global cactuses, STATES
+    _cactuses = list(cactuses)
+    available = []
+    for i in range(len(STATES)):
+        if STATES[i]:
+            available.append(_cactuses[i])
+    cactus = choice(available)
+    for id in range(CACTUSES):
+        if _cactuses[id] == cactus:
+            STATES[id] = False
+            break
+    return [cactus, id]
 
 
 HEIGHT, WIDTH = 500, 1000
@@ -159,15 +194,19 @@ GROUND_LEN = 975
 GROUND_HEIGHT = 87
 
 CACTUSES = 6
+WIDTHES = {}  # ширина кактусов
+STATES = []  # доступность исползования кактусов
+CACTUS = ''  # выбранный кактус
+ID = -1  # id выбранного кактуса среди объектов
 
-SPEED = 20
+SPEED = 40
 
 NYAN_HEIGHT = 105
 NYAN_WIDTH = 165
 NYAN = ''
 
 FALL_SPEED = 20
-LIFTING_SPEED = -20
+LIFTING_SPEED = -1 * FALL_SPEED  # y напрвлено вниз, движение вверх производится его вычитанием
 FALL = False
 LIFTING = False
 LIFTING_COUNTER = 0
@@ -190,7 +229,7 @@ generate_ground(GROUNDS)
 cactuses = pygame.sprite.Group()
 generate_cactuses(CACTUSES)
 
-game()
+game()  # пока без стартоваго окна и окна паузы, только игровая часть
 
 pygame.quit()
 sys.exit()
