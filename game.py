@@ -37,6 +37,7 @@ def game():
     counter = 0
     fon_animation_counter = 0
     nyan_animation_counter = 0
+    score = 0
 
     while playing:
         global SPEED, JUMP, SECOND_JUMP, NYAN, NYAN_HEIGHT, HEIGHT, GROUND_HEIGHT
@@ -82,6 +83,13 @@ def game():
         creeper.draw(screen)
         nyan_group.draw(screen)
         pygame.display.update()
+        score += int(SPEED / FPS) + 1
+        if score % 100 == 0:
+            if SPEED < 350:
+                SPEED += 5
+                FALL_SPEED += 3
+                LIFTING_SPEED -= 3
+            print(score)
         clock.tick(FPS)
 
 
@@ -161,12 +169,12 @@ def generate_cactuses(n):
         cactuses.add(sprite)
 
 
-def move_cactus(cactus, id, speed):
+def move_cactus(cactus, _id, speed):
     global WIDTHES, cactuses, STATES, CACTUS, ID
-    if cactus.rect.x > -1 * WIDTHES[id]:
+    if cactus.rect.x > -1 * WIDTHES[_id]:
         cactus.rect.x -= speed
     else:
-        STATES[id] = True
+        STATES[_id] = True
         cactus.rect.x = 1000
         CACTUS, ID = change_cactus()
 
@@ -179,11 +187,12 @@ def change_cactus():
         if STATES[i]:
             available.append(_cactuses[i])
     cactus = choice(available)
-    for id in range(CACTUSES):
-        if _cactuses[id] == cactus:
-            STATES[id] = False
+    _id = 0
+    for _id in range(CACTUSES):
+        if _cactuses[_id] == cactus:
+            STATES[_id] = False
             break
-    return [cactus, id]
+    return [cactus, _id]
 
 
 def generate_creeper():
@@ -229,6 +238,9 @@ SECOND_JUMP = False
 
 CREEPER = ''
 CREEPER_STADIES = [0, 1, 0, 1, 0, 1, 0, 1, 2, 3]
+
+GAME_COUNTER = 0
+HIGH_SCORE = 0
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
