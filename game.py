@@ -20,7 +20,7 @@ def count(now, fon, nyan):
             fon += 1
         else:
             fon = 0
-    if now % 1 == 0:
+    if now % 4 == 0:
         if nyan < 2:
             nyan += 1
         else:
@@ -73,12 +73,13 @@ def game():
             move_nyan(FALL_SPEED)
         elif LIFTING:
             move_nyan(LIFTING_SPEED)
-        if not False in STATES:
+        if False not in STATES:
             CACTUS, ID = change_cactus()
         else:
             move_cactus(CACTUS, ID, SPEED)
         ground.draw(screen)
         cactuses.draw(screen)
+        creeper.draw(screen)
         nyan_group.draw(screen)
         pygame.display.update()
         clock.tick(FPS)
@@ -109,7 +110,7 @@ def generate_nyan():
     sprite.rect.x = 80
     sprite.rect.y = HEIGHT - GROUND_HEIGHT - NYAN_HEIGHT
     nyan_group.add(sprite)
-    NYAN = list(nyan_group)[0]
+    NYAN = sprite
 
 
 def move_nyan(i):
@@ -170,7 +171,6 @@ def move_cactus(cactus, id, speed):
         CACTUS, ID = change_cactus()
 
 
-
 def change_cactus():
     global cactuses, STATES
     _cactuses = list(cactuses)
@@ -184,6 +184,17 @@ def change_cactus():
             STATES[id] = False
             break
     return [cactus, id]
+
+
+def generate_creeper():
+    global HEIGHT, GROUND_HEIGHT, CREEPER, creeper
+    sprite = pygame.sprite.Sprite()
+    sprite.image = load_image('creeper/creeper_0.png')
+    sprite.rect = sprite.image.get_rect()
+    sprite.rect.x = 500
+    sprite.rect.y = HEIGHT - GROUND_HEIGHT - list(sprite.rect)[-1]
+    CREEPER = sprite
+    creeper.add(CREEPER)
 
 
 HEIGHT, WIDTH = 500, 1000
@@ -205,8 +216,8 @@ NYAN_HEIGHT = 105
 NYAN_WIDTH = 165
 NYAN = ''
 
-FALL_SPEED = 20
-LIFTING_SPEED = -1 * FALL_SPEED  # y напрвлено вниз, движение вверх производится его вычитанием
+FALL_SPEED = 30
+LIFTING_SPEED = -1 * FALL_SPEED  # ось y напрвлена вниз, движение вверх производится его вычитанием
 FALL = False
 LIFTING = False
 LIFTING_COUNTER = 0
@@ -215,6 +226,9 @@ SECOND_LIFTING = 100
 
 JUMP = False
 SECOND_JUMP = False
+
+CREEPER = ''
+CREEPER_STADIES = [0, 1, 0, 1, 0, 1, 0, 1, 2, 3]
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -228,6 +242,9 @@ generate_ground(GROUNDS)
 
 cactuses = pygame.sprite.Group()
 generate_cactuses(CACTUSES)
+
+creeper = pygame.sprite.Group()
+generate_creeper()
 
 game()  # пока без стартоваго окна и окна паузы, только игровая часть
 
