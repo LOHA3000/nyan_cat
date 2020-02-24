@@ -1,7 +1,7 @@
 import pygame
 import sys
 import os
-from random import choice
+from random import choice, randint
 
 
 def load_image(name, color_key=None, transform=None):
@@ -37,12 +37,15 @@ def game():
     counter = 0
     fon_animation_counter = 0
     nyan_animation_counter = 0
+    creeper_animation_counter = 0
     score = 0
+    fly_counter = 0
 
     while playing:
         global SPEED, JUMP, SECOND_JUMP, NYAN, NYAN_HEIGHT, HEIGHT, GROUND_HEIGHT
-        global LIFTING, FALL, FALL_SPEED, LIFTING_SPEED, LIFTING_COUNTER
+        global LIFTING, FALL, FALL_SPEED, LIFTING_SPEED, LIFTING_COUNTER, FLY
         global STATES, CACTUS, ID
+        global CREEPER_STADIES
 
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
@@ -56,10 +59,6 @@ def game():
                         FALL = False
                         SECOND_JUMP = True
                         LIFTING_COUNTER = 0
-                elif event.key == pygame.K_LEFT:
-                    SPEED -= 10
-                elif event.key == pygame.K_RIGHT:
-                    SPEED += 10
             elif event.type == pygame.QUIT:
                 playing = False
         new_counters = count(counter, fon_animation_counter, nyan_animation_counter)
@@ -74,10 +73,27 @@ def game():
             move_nyan(FALL_SPEED)
         elif LIFTING:
             move_nyan(LIFTING_SPEED)
+        elif FLY:
+            move_nyan(0)
+            fly_counter += 1
+            if fly_counter > SPEED / 5:
+                FLY = False
+                FALL = True
+                fly_counter = 0
         if False not in STATES:
             CACTUS, ID = change_cactus()
         else:
             move_cactus(CACTUS, ID, SPEED)
+        ''''''
+
+        if creeper_animation_counter < len(CREEPER_STADIES) - 1:
+            creeper_animation_counter += 1
+        else:
+            creeper_animation_counter = 0
+        creeper_animation(creeper_animation_counter)
+        creeper_move(SPEED - 5)
+
+        ''''''
         ground.draw(screen)
         cactuses.draw(screen)
         creeper.draw(screen)
@@ -85,11 +101,11 @@ def game():
         pygame.display.update()
         score += int(SPEED / FPS) + 1
         if score % 100 == 0:
-            if SPEED < 350:
-                SPEED += 5
-                FALL_SPEED += 3
-                LIFTING_SPEED -= 3
-            print(score)
+            if SPEED < 100:
+                SPEED += 2
+                FALL_SPEED += 1
+                LIFTING_SPEED -= 1
+            # print(score)  # увеличение количества очков на 100
         clock.tick(FPS)
 
 
@@ -123,7 +139,7 @@ def generate_nyan():
 
 def move_nyan(i):
     global JUMP, SECOND_JUMP, NYAN, NYAN_HEIGHT, HEIGHT, GROUND_HEIGHT
-    global LIFTING, FALL, LIFTING_COUNTER, FIRST_LIFTING, SECOND_LIFTING
+    global LIFTING, FALL, LIFTING_COUNTER, FIRST_LIFTING, SECOND_LIFTING, FLY
     if i > 0:
         if NYAN.rect.y + NYAN_HEIGHT < HEIGHT - GROUND_HEIGHT:
             NYAN.rect.y += i
@@ -143,7 +159,8 @@ def move_nyan(i):
             LIFTING_COUNTER -= i
         else:
             LIFTING = False
-            FALL = True
+            FALL = False
+            FLY = True
             LIFTING_COUNTER = 0
 
 
@@ -175,7 +192,7 @@ def move_cactus(cactus, _id, speed):
         cactus.rect.x -= speed
     else:
         STATES[_id] = True
-        cactus.rect.x = 1000
+        cactus.rect.x = randint(1000, 1500)
         CACTUS, ID = change_cactus()
 
 
@@ -206,6 +223,19 @@ def generate_creeper():
     creeper.add(CREEPER)
 
 
+def creeper_animation(i):
+    global CREEPER, CREEPER_STADIES
+    CREEPER.image = load_image(f'creeper/creeper_{CREEPER_STADIES[i]}.png')
+
+
+def creeper_move(speed):
+    global CREEPER
+    if CREEPER.rect.x > -1 * list(CREEPER.rect)[-1]:
+        CREEPER.rect.x -= speed
+    else:
+        CREEPER.rect.x = 1000
+
+
 HEIGHT, WIDTH = 500, 1000
 FPS = 60
 
@@ -219,25 +249,26 @@ STATES = []  # доступность исползования кактусов
 CACTUS = ''  # выбранный кактус
 ID = -1  # id выбранного кактуса среди объектов
 
-SPEED = 40
+SPEED = 25
 
 NYAN_HEIGHT = 105
 NYAN_WIDTH = 165
 NYAN = ''
 
-FALL_SPEED = 30
+FALL_SPEED = 25
 LIFTING_SPEED = -1 * FALL_SPEED  # ось y напрвлена вниз, движение вверх производится его вычитанием
 FALL = False
 LIFTING = False
 LIFTING_COUNTER = 0
 FIRST_LIFTING = 200
 SECOND_LIFTING = 100
+FLY = False
 
 JUMP = False
 SECOND_JUMP = False
 
 CREEPER = ''
-CREEPER_STADIES = [0, 1, 0, 1, 0, 1, 0, 1, 2, 3]
+CREEPER_STADIES = [0, 1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 3, 3, 3, 3]
 
 GAME_COUNTER = 0
 HIGH_SCORE = 0
