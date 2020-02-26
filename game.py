@@ -4,35 +4,35 @@ import os
 from random import choice, randint
 
 
-def terminate():
+def terminate():  # отключение программы
     global playing, is_pause
-    playing, is_pause = False, False
-    pygame.quit()
-    sys.exit()
+    playing, is_pause = False, False  # отключение основных циклов
+    pygame.quit()  # отключение pygame
+    sys.exit()  # выключение программы
 
 
-def load_image(name, color_key=None, transform=None):
-    fullname = os.path.join('data', name)
-    image = pygame.image.load(fullname)
+def load_image(name, color_key=None, transform=None):  # загрузка картинки
+    fullname = os.path.join('data', name)  # преобразование пути в data\\<изначальный путь>
+    image = pygame.image.load(fullname)  # преобразование в объект Surfase pygame
     if color_key is None:
-        image.set_colorkey(color_key)
+        image.set_colorkey(color_key)  # создание прозрачного фона (не работает)
     if not (transform is None):
-        image = pygame.transform.scale(image, tuple(transform))
+        image = pygame.transform.scale(image, tuple(transform))  # изменение размера картинки
     return image
 
 
-def count(now, fon, nyan):
-    if now % 2 == 0:
+def count(now, fon, nyan):  # расчёт номера анимации
+    if now % 2 == 0:  # цикл анимации фона (раз в 3 смены основного)
         if fon < 3:
             fon += 1
         else:
             fon = 0
-    if now % 4 == 0:
+    if now % 4 == 0:  # цикл анимации нян кэта (раз в 5 смен основного)
         if nyan < 2:
             nyan += 1
         else:
             nyan = 0
-    if now < 59:
+    if now < 59:  # цикл смены основного счётчика
         now += 1
     else:
         now = 0
@@ -51,41 +51,42 @@ def game():
     pos = pause_button_pos
     size = pause_button_size
 
-    while playing:
-        for event in pygame.event.get():
+    while playing:  # основной цикл игры
+        for event in pygame.event.get():  # сбор и обработка событий в окне
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
+                if event.key == pygame.K_SPACE:  # прыжок
                     if not JUMP:
                         LIFTING = True
                         FALL = False
                         JUMP = True
-                    elif JUMP and not SECOND_JUMP:
+                    elif JUMP and not SECOND_JUMP:  # второй прыжок
                         LIFTING = True
                         FALL = False
                         SECOND_JUMP = True
                         LIFTING_COUNTER = 0
-            elif event.type == pygame.MOUSEBUTTONDOWN:
+            elif event.type == pygame.MOUSEBUTTONDOWN:  # нажатие на кнопку паузы
                 if pos[0] + size[0] > event.pos[0] > pos[0] and pos[1] + size[1] > event.pos[1] > pos[1]:
                     is_pause = True
                     playing = False
                     pause()
-            elif event.type == pygame.QUIT:
+            elif event.type == pygame.QUIT:  # закрытие окна
                 terminate()
 
         new_counters = count(counter, fon_animation_counter, nyan_animation_counter)
         counter, fon_animation_counter, nyan_animation_counter = new_counters
 
-        fon_image = f'fon/fon_{fon_animation_counter}.jpg'
+        fon_image = f'fon/fon_{fon_animation_counter}.jpg'  # перезапись картинки фона для анимации
         fon = load_image(fon_image)
-        screen.blit(fon, (0, 0))
+        screen.blit(fon, (0, 0))  # отображение на экране
 
-        screen.blit(pause_button_image, tuple(pause_button_pos))
+        screen.blit(pause_button_image, tuple(pause_button_pos))  # отображение кнопки "пауза"
 
-        animate_nyan(nyan_animation_counter)
+        animate_nyan(nyan_animation_counter)  # выбор вида персонажа в анимации
 
-        for i in range(GROUNDS):
+        for i in range(GROUNDS):  # движение "земли"
             move_ground(list(ground)[i], SPEED)
 
+        # проверка падения, прыжка и полёта после прыжка
         if FALL:
             move_nyan(FALL_SPEED)
         elif LIFTING:
@@ -98,58 +99,59 @@ def game():
                 FALL = True
                 fly_counter = 0
 
-        if False not in STATES:
+        if False not in STATES:  # проверкадоступности объектов кактусов
             CACTUS, ID = change_cactus()
-        else:
+        else:  # движение доступного кактуса
             move_cactus(CACTUS, ID, SPEED)
 
+        # анимация крипера (похоже, что он там просто для красоты)
         if creeper_animation_counter < len(CREEPER_STADIES) - 1:
             creeper_animation_counter += 1
         else:
             creeper_animation_counter = 0
         creeper_animation(creeper_animation_counter)
-        creeper_move(SPEED // 2)
+        creeper_move(SPEED // 2)  # передвижение крипера
 
-        ground.draw(screen)
-        cactuses.draw(screen)
-        creeper.draw(screen)
-        nyan_group.draw(screen)
-        pygame.display.update()
+        ground.draw(screen)  # отрисовка "земли"
+        cactuses.draw(screen)  # отрисовка кактусов
+        creeper.draw(screen)  # отрисовка крипера
+        nyan_group.draw(screen)  # отрисовка нян кэт
+        pygame.display.update()  # обновление экрана
 
-        score += int(SPEED / FPS) + 1
-        if score % 100 == 0:
+        score += int(SPEED / FPS) + 1  # увеличение счётчика
+        if score % 100 == 0:  # увеличение скорости движения в игре
             if SPEED < 100:
                 SPEED += 2
                 FALL_SPEED += 1
                 LIFTING_SPEED -= 1
 
-        clock.tick(FPS)
+        clock.tick(FPS)  # ограничение повторений цикла в секунду
 
 
-def pause():
+def pause():  # меню паузы
     global is_pause, pause_fon_image, continue_button_image, continue_button_pos, continue_button_size, playing
     global FPS
 
-    screen.blit(pause_fon_image, (0, 0))
-    screen.blit(continue_button_image, tuple(continue_button_pos))
-    pygame.display.update()
+    screen.blit(pause_fon_image, (0, 0))  # отрисовка экрана паузы
+    screen.blit(continue_button_image, tuple(continue_button_pos))  # отрисовка кнопки "продолжить"
+    pygame.display.update()  # обновление дисплея
     pos = continue_button_pos
     size = continue_button_size
 
-    while is_pause:
-        for event in pygame.event.get():
-            if event.type == pygame.MOUSEBUTTONDOWN:
+    while is_pause:  # основной цикл паузы
+        for event in pygame.event.get():  # сбор событий и их обработка
+            if event.type == pygame.MOUSEBUTTONDOWN:  # нажатие на кнопку продолжение курсором мыши
                 if pos[0] + size[0] > event.pos[0] > pos[0] and pos[1] + size[1] > event.pos[1] > pos[1]:
                     is_pause = False
                     playing = True
                     game()
-            elif event.type == pygame.QUIT:
+            elif event.type == pygame.QUIT:  # выход из игры
                 terminate()
 
-        clock.tick(FPS)
+        clock.tick(FPS)  # ограничение повторений цикла в секунду
 
 
-def generate_ground(n):
+def generate_ground(n):  # создание объектов "земли" в необходимом кол-ве
     for i in range(n):
         sprite = pygame.sprite.Sprite()
         sprite.image = load_image(f"ground/ground_{i}.jpg")
@@ -159,58 +161,61 @@ def generate_ground(n):
         ground.add(sprite)
 
 
-def move_ground(ground_part, speed):
+def move_ground(ground_part, speed):  # перемещение выбранного участка "земли" с заданной скоростью
     if ground_part.rect.x <= -1 * GROUND_LEN:
         n = ground_part.rect.x + GROUND_LEN
         ground_part.rect.x = (GROUNDS - 1) * GROUND_LEN + n
     ground_part.rect.x -= speed
 
 
-def generate_nyan():
+def generate_nyan():  # создание объекта нян кэт
     global NYAN
+
     sprite = pygame.sprite.Sprite()
     sprite.image = load_image(f'nyan/nyan_0.png', transform=[NYAN_WIDTH, NYAN_HEIGHT])
     sprite.rect = pygame.Rect(0, 0, NYAN_WIDTH, NYAN_HEIGHT)
     sprite.rect.x = 80
     sprite.rect.y = HEIGHT - GROUND_HEIGHT - NYAN_HEIGHT
     nyan_group.add(sprite)
-    NYAN = sprite
+    NYAN = sprite  # запись в глобальную переменную для более удобного использования
 
 
-def move_nyan(i):
+def move_nyan(i):  # прыжки и падение нян кэт
     global JUMP, SECOND_JUMP, NYAN, NYAN_HEIGHT, HEIGHT, GROUND_HEIGHT
     global LIFTING, FALL, LIFTING_COUNTER, FIRST_LIFTING, SECOND_LIFTING, FLY
-    if i > 0:
-        if NYAN.rect.y + NYAN_HEIGHT < HEIGHT - GROUND_HEIGHT:
+
+    if i > 0:  # падение
+        if NYAN.rect.y + NYAN_HEIGHT < HEIGHT - GROUND_HEIGHT:  # пока не коснётся "земли" падает с скоростью i
             NYAN.rect.y += i
-        if NYAN.rect.y + NYAN_HEIGHT > HEIGHT - GROUND_HEIGHT:
+        if NYAN.rect.y + NYAN_HEIGHT > HEIGHT - GROUND_HEIGHT:  # сразу устанавливается на "землю", если слишком низко
             NYAN.rect.y = HEIGHT - GROUND_HEIGHT - NYAN_HEIGHT
-        elif NYAN.rect.y + NYAN_HEIGHT == HEIGHT - GROUND_HEIGHT:
+        elif NYAN.rect.y + NYAN_HEIGHT == HEIGHT - GROUND_HEIGHT:  # момент касания "земли"
             JUMP = False
             SECOND_JUMP = False
             LIFTING = False
             FALL = False
-    if i < 0:
-        if (JUMP and not SECOND_JUMP) and LIFTING_COUNTER < FIRST_LIFTING:
+    if i < 0:  # прыжок
+        if (JUMP and not SECOND_JUMP) and LIFTING_COUNTER < FIRST_LIFTING:  # первый прыжок
             NYAN.rect.y += i
             LIFTING_COUNTER -= i
-        elif SECOND_JUMP and LIFTING_COUNTER < SECOND_LIFTING:
+        elif SECOND_JUMP and LIFTING_COUNTER < SECOND_LIFTING:  # второй прыжок
             NYAN.rect.y += i
             LIFTING_COUNTER -= i
-        else:
+        else:  # активация полёта
             LIFTING = False
             FALL = False
             FLY = True
             LIFTING_COUNTER = 0
 
 
-def animate_nyan(nyan_count):
+def animate_nyan(nyan_count):  # обработка анимации нян кэта
     nyan_image = f'nyan/nyan_{nyan_count}.png'
     NYAN.image = load_image(nyan_image, transform=[NYAN_WIDTH, NYAN_HEIGHT])
 
 
-def generate_cactuses(n):
+def generate_cactuses(n):  # создание заданного количества объектов кактусов
     global WIDTHES, STATES
+
     for i in range(n):
         sprite = pygame.sprite.Sprite()
         sprite.image = load_image(f'cactuses/cactus_{i}.png')
@@ -226,8 +231,9 @@ def generate_cactuses(n):
         cactuses.add(sprite)
 
 
-def move_cactus(cactus, _id, speed):
+def move_cactus(cactus, _id, speed):  # движение кактусов с проверкой их доступности
     global WIDTHES, cactuses, STATES, CACTUS, ID
+
     if cactus.rect.x > -1 * WIDTHES[_id]:
         cactus.rect.x -= speed
     else:
@@ -236,8 +242,9 @@ def move_cactus(cactus, _id, speed):
         CACTUS, ID = change_cactus()
 
 
-def change_cactus():
+def change_cactus():  # выбор кактуса для движения из доступных
     global cactuses, STATES
+
     _cactuses = list(cactuses)
     available = []
     for i in range(len(STATES)):
@@ -252,8 +259,9 @@ def change_cactus():
     return [cactus, _id]
 
 
-def generate_creeper():
+def generate_creeper():  # создание объекта крипера
     global HEIGHT, GROUND_HEIGHT, CREEPER, creeper
+
     sprite = pygame.sprite.Sprite()
     sprite.image = load_image('creeper/creeper_0.png')
     sprite.rect = sprite.image.get_rect()
@@ -263,12 +271,13 @@ def generate_creeper():
     creeper.add(CREEPER)
 
 
-def creeper_animation(i):
+def creeper_animation(i):  # анимация крипера
     global CREEPER, CREEPER_STADIES
+
     CREEPER.image = load_image(f'creeper/creeper_{CREEPER_STADIES[i]}.png')
 
 
-def creeper_move(speed):
+def creeper_move(speed):  # перемещение крипера с заданной скоростью
     global CREEPER
     if CREEPER.rect.x > -1 * list(CREEPER.rect)[-1]:
         CREEPER.rect.x -= speed
@@ -276,74 +285,76 @@ def creeper_move(speed):
         CREEPER.rect.x = 1000
 
 
-HEIGHT, WIDTH = 500, 1000
-FPS = 60
+# основные переменные
 
-GROUNDS = 3
-GROUND_LEN = 975
-GROUND_HEIGHT = 87
+HEIGHT, WIDTH = 500, 1000  # высота и ширина окна игры
+FPS = 60  # количество кадров в секунду
 
-CACTUSES = 6
+GROUNDS = 3  # количество объектов "земли"
+GROUND_LEN = 975  # длина "земли"
+GROUND_HEIGHT = 87  # высота "земли"
+
+CACTUSES = 6  # количество кактусов
 WIDTHES = {}  # ширина кактусов
 STATES = []  # доступность исползования кактусов
 CACTUS = ''  # выбранный кактус
 ID = -1  # id выбранного кактуса среди объектов
 
-SPEED = 25
+SPEED = 25  # скорость игры
 
-NYAN_HEIGHT = 105
-NYAN_WIDTH = 165
-NYAN = ''
+NYAN_HEIGHT = 105  # высота нян кэт
+NYAN_WIDTH = 165  # длина нян кэт
+NYAN = ''  # в будущем спрайт нян кэт
 
-FALL_SPEED = 25
+FALL_SPEED = 25  # скорость падения
 LIFTING_SPEED = -1 * FALL_SPEED  # ось y напрвлена вниз, движение вверх производится его вычитанием
-FALL = False
-LIFTING = False
-LIFTING_COUNTER = 0
-FIRST_LIFTING = 200
-SECOND_LIFTING = 100
-FLY = False
+FALL = False  # состояние падения
+LIFTING = False  # состояние прыжка
+LIFTING_COUNTER = 0  # проверка длительности подъёма
+FIRST_LIFTING = 200  # предел подъёма первым прыжком
+SECOND_LIFTING = 100  # предел подъёма вторым прыжком
+FLY = False  # состояние полёта
 
-JUMP = False
-SECOND_JUMP = False
+JUMP = False  # совершение первого прыжка
+SECOND_JUMP = False  # совершение второго прыжка
 
-CREEPER = ''
-CREEPER_STADIES = [0, 1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 3, 3, 3, 3]
+CREEPER = ''  # в будущем спрайт крипера
+CREEPER_STADIES = [0, 1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 3, 3, 3, 3]  # порядок состояния крипера
 
-GAME_COUNTER = 0
-HIGH_SCORE = 0
+GAME_COUNTER = 0  # счётчик игры
+HIGH_SCORE = 0  # наибольший счёт (пока не задействован)
 
-pygame.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-clock = pygame.time.Clock()
+pygame.init()  # инициализация pygame
+screen = pygame.display.set_mode((WIDTH, HEIGHT))  # создание игрового окна
+clock = pygame.time.Clock()  # создание ограничителя времени
 
-nyan_group = pygame.sprite.Group()
+nyan_group = pygame.sprite.Group()  # группа спрайтов нян кэт
 generate_nyan()
 
-ground = pygame.sprite.Group()
+ground = pygame.sprite.Group()  # группа спрайтов "земли"
 generate_ground(GROUNDS)
 
-cactuses = pygame.sprite.Group()
+cactuses = pygame.sprite.Group()  # группа спрайтов кактусов
 generate_cactuses(CACTUSES)
 
-creeper = pygame.sprite.Group()
+creeper = pygame.sprite.Group()  # группа спрайтов криппера
 generate_creeper()
 
-playing = True
-counter = 0
-fon_animation_counter = 0
-nyan_animation_counter = 0
-creeper_animation_counter = 0
-score = 0
-fly_counter = 0
+playing = True  # состояние игры
+counter = 0  # основной счётчик
+fon_animation_counter = 0  # счётчик анимации фона
+nyan_animation_counter = 0  # счётчик анимации нян кэт
+creeper_animation_counter = 0  # счётчик анимации крипера
+score = 0  # счёт игры
+fly_counter = 0  # проверка длительности полёта
 
-is_pause = False
-pause_button_image = load_image('pause/pause_button.png')
-pause_button_pos = [890, 10]
-pause_button_size = [100, 100]
-pause_fon_image = load_image('pause/pause_fon.png')
-continue_button_image = load_image('pause/continue_button.png')
-continue_button_size = [100, 100]
-continue_button_pos = [450, 350]
+is_pause = False  # состояние паузы
+pause_button_image = load_image('pause/pause_button.png')  # изображение кнопки паузы
+pause_button_pos = [890, 10]  # расположение кнопки паузы
+pause_button_size = [100, 100]  # размер кнопки паузы
+pause_fon_image = load_image('pause/pause_fon.png')  # картинка фона паузы
+continue_button_image = load_image('pause/continue_button.png')  # картинка кнопки продолжения игры
+continue_button_size = [100, 100]  # размеры кнопки продолжения
+continue_button_pos = [450, 350]  # положение кнопки продолжения
 
 game()  # пока без стартоваго окна, только игровая часть и пауза
