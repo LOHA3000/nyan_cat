@@ -4,6 +4,13 @@ import os
 from random import choice, randint
 
 
+def terminate():
+    global playing, is_pause
+    playing, is_pause = False, False
+    pygame.quit()
+    sys.exit()
+
+
 def load_image(name, color_key=None, transform=None):
     fullname = os.path.join('data', name)
     image = pygame.image.load(fullname)
@@ -33,20 +40,18 @@ def count(now, fon, nyan):
 
 
 def game():
-    playing = True
-    counter = 0
-    fon_animation_counter = 0
-    nyan_animation_counter = 0
-    creeper_animation_counter = 0
-    score = 0
-    fly_counter = 0
+    global SPEED, JUMP, SECOND_JUMP, NYAN, NYAN_HEIGHT, HEIGHT, GROUND_HEIGHT, FPS
+    global LIFTING, FALL, FALL_SPEED, LIFTING_SPEED, LIFTING_COUNTER, FLY
+    global STATES, CACTUS, ID
+    global CREEPER_STADIES
+    global playing, counter, fon_animation_counter, nyan_animation_counter, creeper_animation_counter
+    global score, fly_counter, pause_button_image, pause_button_pos, pause_button_size
+    global is_pause
+
+    pos = pause_button_pos
+    size = pause_button_size
 
     while playing:
-        global SPEED, JUMP, SECOND_JUMP, NYAN, NYAN_HEIGHT, HEIGHT, GROUND_HEIGHT
-        global LIFTING, FALL, FALL_SPEED, LIFTING_SPEED, LIFTING_COUNTER, FLY
-        global STATES, CACTUS, ID
-        global CREEPER_STADIES
-
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
@@ -59,16 +64,28 @@ def game():
                         FALL = False
                         SECOND_JUMP = True
                         LIFTING_COUNTER = 0
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if pos[0] + size[0] > event.pos[0] > pos[0] and pos[1] + size[1] > event.pos[1] > pos[1]:
+                    is_pause = True
+                    playing = False
+                    pause()
             elif event.type == pygame.QUIT:
-                playing = False
+                terminate()
+
         new_counters = count(counter, fon_animation_counter, nyan_animation_counter)
         counter, fon_animation_counter, nyan_animation_counter = new_counters
+
         fon_image = f'fon/fon_{fon_animation_counter}.jpg'
         fon = load_image(fon_image)
         screen.blit(fon, (0, 0))
+
+        screen.blit(pause_button_image, tuple(pause_button_pos))
+
         animate_nyan(nyan_animation_counter)
+
         for i in range(GROUNDS):
             move_ground(list(ground)[i], SPEED)
+
         if FALL:
             move_nyan(FALL_SPEED)
         elif LIFTING:
@@ -80,32 +97,55 @@ def game():
                 FLY = False
                 FALL = True
                 fly_counter = 0
+
         if False not in STATES:
             CACTUS, ID = change_cactus()
         else:
             move_cactus(CACTUS, ID, SPEED)
-        ''''''
 
         if creeper_animation_counter < len(CREEPER_STADIES) - 1:
             creeper_animation_counter += 1
         else:
             creeper_animation_counter = 0
         creeper_animation(creeper_animation_counter)
-        creeper_move(SPEED - 5)
+        creeper_move(SPEED // 2)
 
-        ''''''
         ground.draw(screen)
         cactuses.draw(screen)
         creeper.draw(screen)
         nyan_group.draw(screen)
         pygame.display.update()
+
         score += int(SPEED / FPS) + 1
         if score % 100 == 0:
             if SPEED < 100:
                 SPEED += 2
                 FALL_SPEED += 1
                 LIFTING_SPEED -= 1
-            # print(score)  # увеличение количества очков на 100
+
+        clock.tick(FPS)
+
+
+def pause():
+    global is_pause, pause_fon_image, continue_button_image, continue_button_pos, continue_button_size, playing
+    global FPS
+
+    screen.blit(pause_fon_image, (0, 0))
+    screen.blit(continue_button_image, tuple(continue_button_pos))
+    pygame.display.update()
+    pos = continue_button_pos
+    size = continue_button_size
+
+    while is_pause:
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if pos[0] + size[0] > event.pos[0] > pos[0] and pos[1] + size[1] > event.pos[1] > pos[1]:
+                    is_pause = False
+                    playing = True
+                    game()
+            elif event.type == pygame.QUIT:
+                terminate()
+
         clock.tick(FPS)
 
 
@@ -289,7 +329,21 @@ generate_cactuses(CACTUSES)
 creeper = pygame.sprite.Group()
 generate_creeper()
 
-game()  # пока без стартоваго окна и окна паузы, только игровая часть
+playing = True
+counter = 0
+fon_animation_counter = 0
+nyan_animation_counter = 0
+creeper_animation_counter = 0
+score = 0
+fly_counter = 0
 
-pygame.quit()
-sys.exit()
+is_pause = False
+pause_button_image = load_image('pause/pause_button.png')
+pause_button_pos = [890, 10]
+pause_button_size = [100, 100]
+pause_fon_image = load_image('pause/pause_fon.png')
+continue_button_image = load_image('pause/continue_button.png')
+continue_button_size = [100, 100]
+continue_button_pos = [450, 350]
+
+game()  # пока без стартоваго окна, только игровая часть и пауза
