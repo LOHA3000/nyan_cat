@@ -6,9 +6,12 @@ import time
 
 
 def terminate():  # отключение программы
-    global playing, is_pause
+    global playing, is_pause, HIGH_SCORE
     playing, is_pause = False, False  # отключение основных циклов
     pygame.quit()  # отключение pygame
+    file = open('data/high_score.txt', 'w')
+    file.write(str(HIGH_SCORE))
+    file.close()
     sys.exit()  # выключение программы
 
 
@@ -47,7 +50,7 @@ def game():
     global CREEPER_STADIES
     global playing, counter, fon_animation_counter, nyan_animation_counter, creeper_animation_counter
     global score, fly_counter, pause_button_image, pause_button_pos, pause_button_size
-    global is_pause, is_main_menu
+    global is_pause, is_main_menu, score, HIGH_SCORE
 
     pos = pause_button_pos
     size = pause_button_size
@@ -132,6 +135,8 @@ def game():
 
     time.sleep(3)
     is_main_menu = True
+    if score > HIGH_SCORE:
+        HIGH_SCORE = score
     restart()
     main_menu()
 
@@ -360,7 +365,8 @@ CREEPER = ''  # в будущем спрайт крипера
 CREEPER_STADIES = [0, 1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 3, 3, 3, 3]  # порядок состояния крипера
 
 GAME_COUNTER = 0  # счётчик игры
-HIGH_SCORE = 0  # наибольший счёт (пока не задействован)
+
+HIGH_SCORE = int(open('data/high_score.txt').read())  # наибольший счёт
 
 pygame.init()  # инициализация pygame
 screen = pygame.display.set_mode((WIDTH, HEIGHT))  # создание игрового окна
