@@ -2,6 +2,7 @@ import pygame
 import sys
 import os
 from random import choice, randint
+import time
 
 
 def terminate():  # отключение программы
@@ -46,7 +47,7 @@ def game():
     global CREEPER_STADIES
     global playing, counter, fon_animation_counter, nyan_animation_counter, creeper_animation_counter
     global score, fly_counter, pause_button_image, pause_button_pos, pause_button_size
-    global is_pause
+    global is_pause, is_main_menu
 
     pos = pause_button_pos
     size = pause_button_size
@@ -94,7 +95,7 @@ def game():
         elif FLY:
             move_nyan(0)
             fly_counter += 1
-            if fly_counter > SPEED / 5:
+            if fly_counter > SPEED ** (1 / 3):
                 FLY = False
                 FALL = True
                 fly_counter = 0
@@ -125,7 +126,14 @@ def game():
                 FALL_SPEED += 1
                 LIFTING_SPEED -= 1
 
+        game_status()
+
         clock.tick(FPS)  # ограничение повторений цикла в секунду
+
+    time.sleep(3)
+    is_main_menu = True
+    restart()
+    main_menu()
 
 
 def pause():  # меню паузы
@@ -144,6 +152,29 @@ def pause():  # меню паузы
                 if pos[0] + size[0] > event.pos[0] > pos[0] and pos[1] + size[1] > event.pos[1] > pos[1]:
                     is_pause = False
                     playing = True
+                    game()
+            elif event.type == pygame.QUIT:  # выход из игры
+                terminate()
+
+        clock.tick(FPS)  # ограничение повторений цикла в секунду
+
+
+def main_menu():  # меню начала игры
+    global FPS, is_main_menu, playing
+    global menu_fon_image, start_button_image, start_button_pos, start_button_size
+
+    screen.blit(menu_fon_image, (0, 0))  # отрисовка экрана паузы
+    screen.blit(start_button_image, tuple(start_button_pos))  # отрисовка кнопки "продолжить"
+    pygame.display.update()  # обновление дисплея
+    pos = start_button_pos
+    size = start_button_size
+
+    while is_main_menu:  # основной цикл окна меню
+        for event in pygame.event.get():  # сбор событий и их обработка
+            if event.type == pygame.MOUSEBUTTONDOWN:  # нажатие на кнопку старта курсором мыши
+                if pos[0] + size[0] > event.pos[0] > pos[0] and pos[1] + size[1] > event.pos[1] > pos[1]:
+                    playing = True
+                    is_main_menu = False
                     game()
             elif event.type == pygame.QUIT:  # выход из игры
                 terminate()
@@ -181,7 +212,7 @@ def generate_nyan():  # создание объекта нян кэт
 
 
 def move_nyan(i):  # прыжки и падение нян кэт
-    global JUMP, SECOND_JUMP, NYAN, NYAN_HEIGHT, HEIGHT, GROUND_HEIGHT
+    global JUMP, SECOND_JUMP, NYAN, NYAN_HEIGHT, HEIGHT, GROUND_HEIGHT, cactuses
     global LIFTING, FALL, LIFTING_COUNTER, FIRST_LIFTING, SECOND_LIFTING, FLY
 
     if i > 0:  # падение
@@ -206,6 +237,13 @@ def move_nyan(i):  # прыжки и падение нян кэт
             FALL = False
             FLY = True
             LIFTING_COUNTER = 0
+
+
+def game_status():
+    global NYAN, CACTUS, playing, is_pause
+
+    if pygame.sprite.collide_mask(NYAN, CACTUS):
+        playing = False
 
 
 def animate_nyan(nyan_count):  # обработка анимации нян кэта
@@ -340,7 +378,48 @@ generate_cactuses(CACTUSES)
 creeper = pygame.sprite.Group()  # группа спрайтов криппера
 generate_creeper()
 
-playing = True  # состояние игры
+
+def restart():  # сброс настроек для перезапуска
+    global playing, counter, fon_animation_counter, nyan_animation_counter, creeper_animation_counter
+    global score, fly_counter
+    global STATES, ID, SPEED, FALL_SPEED, LIFTING_SPEED, FALL, LIFTING, LIFTING_COUNTER, FLY, JUMP, SECOND_JUMP
+    global GAME_COUNTER
+    global nyan_group, creeper, ground, cactuses
+
+    playing = True  # состояние игры
+    counter = 0  # основной счётчик
+    fon_animation_counter = 0  # счётчик анимации фона
+    nyan_animation_counter = 0  # счётчик анимации нян кэт
+    creeper_animation_counter = 0  # счётчик анимации крипера
+    score = 0  # счёт игры
+    fly_counter = 0
+    STATES = []
+    ID = -1
+    SPEED = 25
+    FALL_SPEED = 25
+    LIFTING_SPEED = -1 * FALL_SPEED
+    FALL = False
+    LIFTING = False
+    LIFTING_COUNTER = 0
+    FLY = False
+    JUMP = False
+    SECOND_JUMP = False
+    GAME_COUNTER = 0
+
+    nyan_group = pygame.sprite.Group()  # группа спрайтов нян кэт
+    generate_nyan()
+
+    ground = pygame.sprite.Group()  # группа спрайтов "земли"
+    generate_ground(GROUNDS)
+
+    cactuses = pygame.sprite.Group()  # группа спрайтов кактусов
+    generate_cactuses(CACTUSES)
+
+    creeper = pygame.sprite.Group()  # группа спрайтов криппера
+    generate_creeper()
+
+
+playing = False  # состояние игры
 counter = 0  # основной счётчик
 fon_animation_counter = 0  # счётчик анимации фона
 nyan_animation_counter = 0  # счётчик анимации нян кэт
@@ -354,7 +433,13 @@ pause_button_pos = [890, 10]  # расположение кнопки паузы
 pause_button_size = [100, 100]  # размер кнопки паузы
 pause_fon_image = load_image('pause/pause_fon.png')  # картинка фона паузы
 continue_button_image = load_image('pause/continue_button.png')  # картинка кнопки продолжения игры
-continue_button_size = [100, 100]  # размеры кнопки продолжения
-continue_button_pos = [450, 350]  # положение кнопки продолжения
+continue_button_size = [336, 234]  # размеры кнопки продолжения
+continue_button_pos = [332, 250]  # положение кнопки продолжения
 
-game()  # пока без стартоваго окна, только игровая часть и пауза
+is_main_menu = True  # состояние начального меню игры
+menu_fon_image = load_image('main_menu/menu_fon.png')  # картинка фона меню
+start_button_image = load_image('main_menu/start_button.png')  # картинка кнопки старта
+start_button_size = [300, 100]  # размеры кнопки
+start_button_pos = [350, 350]  # положение кнопки
+
+main_menu()  # запуск игры
