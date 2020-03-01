@@ -133,43 +133,47 @@ def game():
 
         clock.tick(FPS)  # ограничение повторений цикла в секунду
 
-    time.sleep(3)
-    is_main_menu = True
-    if score > HIGH_SCORE:
-        HIGH_SCORE = score
-    restart()
-    main_menu()
-
 
 def pause():  # меню паузы
     global is_pause, pause_fon_image, continue_button_image, continue_button_pos, continue_button_size, playing
+    global out_to_menu_image, out_to_menu_button_pos, out_to_menu_button_size, is_main_menu
     global FPS
 
     screen.blit(pause_fon_image, (0, 0))  # отрисовка экрана паузы
     screen.blit(continue_button_image, tuple(continue_button_pos))  # отрисовка кнопки "продолжить"
+    screen.blit(out_to_menu_image, tuple(out_to_menu_button_pos))  # отрисовка кнопки выхода в главное меню
     pygame.display.update()  # обновление дисплея
-    pos = continue_button_pos
-    size = continue_button_size
+    pos_1 = continue_button_pos
+    size_1 = continue_button_size
+    pos_2 = out_to_menu_button_pos
+    size_2 = out_to_menu_button_size
 
     while is_pause:  # основной цикл паузы
         for event in pygame.event.get():  # сбор событий и их обработка
             if event.type == pygame.MOUSEBUTTONDOWN:  # нажатие на кнопку продолжение курсором мыши
-                if pos[0] + size[0] > event.pos[0] > pos[0] and pos[1] + size[1] > event.pos[1] > pos[1]:
+                if pos_1[0] + size_1[0] > event.pos[0] > pos_1[0] and pos_1[1] + size_1[1] > event.pos[1] > pos_1[1]:
                     is_pause = False
                     playing = True
                     game()
+                elif pos_2[0] + size_2[0] > event.pos[0] > pos_2[0] and pos_2[1] + size_2[1] > event.pos[1] > pos_2[1]:
+                    is_pause = False
+                    is_main_menu = True
+                    main_menu()
             elif event.type == pygame.QUIT:  # выход из игры
                 terminate()
 
         clock.tick(FPS)  # ограничение повторений цикла в секунду
 
 
-def main_menu():  # меню начала игры
+def main_menu(state='main'):  # меню начала игры
     global FPS, is_main_menu, playing
     global menu_fon_image, start_button_image, start_button_pos, start_button_size
 
-    screen.blit(menu_fon_image, (0, 0))  # отрисовка экрана паузы
-    screen.blit(start_button_image, tuple(start_button_pos))  # отрисовка кнопки "продолжить"
+    if state == 'main':
+        screen.blit(menu_fon_image, (0, 0))  # отрисовка экрана меню
+    elif state == 'game_over':
+        screen.blit(load_image('main_menu/game_over.png'), (0, 0))  # отрисовка экрана паузы
+    screen.blit(start_button_image, tuple(start_button_pos))  # отрисовка кнопки начала игры
     pygame.display.update()  # обновление дисплея
     pos = start_button_pos
     size = start_button_size
@@ -244,16 +248,32 @@ def move_nyan(i):  # прыжки и падение нян кэт
             LIFTING_COUNTER = 0
 
 
-def game_status():
-    global NYAN, CACTUS, playing, is_pause
+def game_status():  # проверка возможности продолжения игры
+    global NYAN, CACTUS, is_main_menu, playing
 
     if pygame.sprite.collide_mask(NYAN, CACTUS):
         playing = False
+        is_main_menu = True
+        restart()
+        main_menu(state='game_over')
 
 
 def animate_nyan(nyan_count):  # обработка анимации нян кэта
     nyan_image = f'nyan/nyan_{nyan_count}.png'
     NYAN.image = load_image(nyan_image, transform=[NYAN_WIDTH, NYAN_HEIGHT])
+
+
+def generate_rainbow(n):
+    global RAINBOW_WIDTH, RAINBOW_HEIGHT, nyan_group, NYAN_HEIGHT
+
+    image = load_image('nyan/rainbow.png', transform=[RAINBOW_WIDTH, RAINBOW_HEIGHT])
+    for i in range(n):
+        sprite = pygame.sprite.Sprite()
+        sprite.image = image
+        sprite.rect = sprite.image.get_rect()
+        sprite.add(nyan_group)
+        sprite.rect.x = 105
+        sprite.rect.y = HEIGHT - GROUND_HEIGHT - NYAN_HEIGHT
 
 
 def generate_cactuses(n):  # создание заданного количества объектов кактусов
@@ -368,11 +388,17 @@ GAME_COUNTER = 0  # счётчик игры
 
 HIGH_SCORE = int(open('data/high_score.txt').read())  # наибольший счёт
 
+RAINBOWS = 9
+RAINBOW_WIDTH = 10
+RAINBOW_HEIGHT = 90
+RAINBOW_POS = {}
+
 pygame.init()  # инициализация pygame
 screen = pygame.display.set_mode((WIDTH, HEIGHT))  # создание игрового окна
 clock = pygame.time.Clock()  # создание ограничителя времени
 
 nyan_group = pygame.sprite.Group()  # группа спрайтов нян кэт
+# generate_rainbow(RAINBOWS)
 generate_nyan()
 
 ground = pygame.sprite.Group()  # группа спрайтов "земли"
@@ -435,17 +461,20 @@ fly_counter = 0  # проверка длительности полёта
 
 is_pause = False  # состояние паузы
 pause_button_image = load_image('pause/pause_button.png')  # изображение кнопки паузы
-pause_button_pos = [890, 10]  # расположение кнопки паузы
-pause_button_size = [100, 100]  # размер кнопки паузы
+pause_button_pos = [892, 12]  # расположение кнопки паузы
+pause_button_size = [96, 96]  # размер кнопки паузы
 pause_fon_image = load_image('pause/pause_fon.png')  # картинка фона паузы
 continue_button_image = load_image('pause/continue_button.png')  # картинка кнопки продолжения игры
-continue_button_size = [336, 234]  # размеры кнопки продолжения
-continue_button_pos = [332, 250]  # положение кнопки продолжения
+continue_button_size = [926, 182]  # размеры кнопки продолжения
+continue_button_pos = [37, 300]  # положение кнопки продолжения
+out_to_menu_image = load_image('pause/out_to_menu_button.png')  # картинка выхода в главное меню
+out_to_menu_button_size = [100, 100]  # размеры кнопки продолжения
+out_to_menu_button_pos = [885, 15]  # положение кнопки продолжения
 
 is_main_menu = True  # состояние начального меню игры
 menu_fon_image = load_image('main_menu/menu_fon.png')  # картинка фона меню
 start_button_image = load_image('main_menu/start_button.png')  # картинка кнопки старта
-start_button_size = [300, 100]  # размеры кнопки
-start_button_pos = [350, 350]  # положение кнопки
+start_button_size = [890, 182]  # размеры кнопки
+start_button_pos = [55, 300]  # положение кнопки
 
 main_menu()  # запуск игры
