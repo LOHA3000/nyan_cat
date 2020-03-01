@@ -2,17 +2,25 @@ import pygame
 import sys
 import os
 from random import choice, randint
-import time
 
 
 def terminate():  # отключение программы
-    global playing, is_pause, HIGH_SCORE
+    global playing, is_pause
+
     playing, is_pause = False, False  # отключение основных циклов
     pygame.quit()  # отключение pygame
+    save()
+    sys.exit()  # выключение программы
+
+
+def save():
+    global HIGH_SCORE, score
+
+    if score > HIGH_SCORE:
+        HIGH_SCORE = score
     file = open('data/high_score.txt', 'w')
     file.write(str(HIGH_SCORE))
     file.close()
-    sys.exit()  # выключение программы
 
 
 def load_image(name, color_key=None, transform=None):  # загрузка картинки
@@ -120,6 +128,7 @@ def game():
         cactuses.draw(screen)  # отрисовка кактусов
         creeper.draw(screen)  # отрисовка крипера
         nyan_group.draw(screen)  # отрисовка нян кэт
+        numbers.draw(screen)  # отрисовка цифр
         pygame.display.update()  # обновление экрана
 
         score += int(SPEED / FPS) + 1  # увеличение счётчика
@@ -128,6 +137,7 @@ def game():
                 SPEED += 2
                 FALL_SPEED += 1
                 LIFTING_SPEED -= 1
+        change_numbers()
 
         game_status()
 
@@ -137,11 +147,12 @@ def game():
 def pause():  # меню паузы
     global is_pause, pause_fon_image, continue_button_image, continue_button_pos, continue_button_size, playing
     global out_to_menu_image, out_to_menu_button_pos, out_to_menu_button_size, is_main_menu
-    global FPS
+    global FPS, numbers
 
     screen.blit(pause_fon_image, (0, 0))  # отрисовка экрана паузы
     screen.blit(continue_button_image, tuple(continue_button_pos))  # отрисовка кнопки "продолжить"
     screen.blit(out_to_menu_image, tuple(out_to_menu_button_pos))  # отрисовка кнопки выхода в главное меню
+    numbers.draw(screen)
     pygame.display.update()  # обновление дисплея
     pos_1 = continue_button_pos
     size_1 = continue_button_size
@@ -254,6 +265,7 @@ def game_status():  # проверка возможности продолжен
     if pygame.sprite.collide_mask(NYAN, CACTUS):
         playing = False
         is_main_menu = True
+        save()
         restart()
         main_menu(state='game_over')
 
@@ -261,19 +273,6 @@ def game_status():  # проверка возможности продолжен
 def animate_nyan(nyan_count):  # обработка анимации нян кэта
     nyan_image = f'nyan/nyan_{nyan_count}.png'
     NYAN.image = load_image(nyan_image, transform=[NYAN_WIDTH, NYAN_HEIGHT])
-
-
-def generate_rainbow(n):
-    global RAINBOW_WIDTH, RAINBOW_HEIGHT, nyan_group, NYAN_HEIGHT
-
-    image = load_image('nyan/rainbow.png', transform=[RAINBOW_WIDTH, RAINBOW_HEIGHT])
-    for i in range(n):
-        sprite = pygame.sprite.Sprite()
-        sprite.image = image
-        sprite.rect = sprite.image.get_rect()
-        sprite.add(nyan_group)
-        sprite.rect.x = 105
-        sprite.rect.y = HEIGHT - GROUND_HEIGHT - NYAN_HEIGHT
 
 
 def generate_cactuses(n):  # создание заданного количества объектов кактусов
@@ -348,6 +347,27 @@ def creeper_move(speed):  # перемещение крипера с задан�
         CREEPER.rect.x = 1000
 
 
+def generate_numbers():
+    global numbers, number_size
+
+    for i in range(10):
+        sprite = pygame.sprite.Sprite()
+        sprite.image = load_image('numbers/0.png', transform=number_size)
+        sprite.rect = pygame.Rect([0, 0], number_size)
+        sprite.rect.y = 5
+        sprite.rect.x = 5 + number_size[0] * i
+        sprite.add(numbers)
+
+
+def change_numbers():
+    global numbers, score, number_size
+
+    nums = list(numbers)[::-1]
+    sc = str(score)[::-1]
+    for i in range(len(sc)):
+        nums[i].image = load_image(f'numbers/{sc[i]}.png', transform=number_size)
+
+
 # основные переменные
 
 HEIGHT, WIDTH = 500, 1000  # высота и ширина окна игры
@@ -398,7 +418,6 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))  # создание игров
 clock = pygame.time.Clock()  # создание ограничителя времени
 
 nyan_group = pygame.sprite.Group()  # группа спрайтов нян кэт
-# generate_rainbow(RAINBOWS)
 generate_nyan()
 
 ground = pygame.sprite.Group()  # группа спрайтов "земли"
@@ -409,6 +428,10 @@ generate_cactuses(CACTUSES)
 
 creeper = pygame.sprite.Group()  # группа спрайтов криппера
 generate_creeper()
+
+number_size = [20, 30]  # размеры цифр
+numbers = pygame.sprite.Group()  # цифры
+generate_numbers()
 
 
 def restart():  # сброс настроек для перезапуска
